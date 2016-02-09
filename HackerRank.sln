@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixRotation", "ConsoleApplication1\MatrixRotation.csproj", "{1560AC4C-562E-4F72-860B-A51A1F2AC85C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixRotationTest", "MatrixRotationTest\MatrixRotationTest.csproj", "{04B24493-C10B-456F-9D02-E55911BDF245}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1560AC4C-562E-4F72-860B-A51A1F2AC85C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1560AC4C-562E-4F72-860B-A51A1F2AC85C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1560AC4C-562E-4F72-860B-A51A1F2AC85C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1560AC4C-562E-4F72-860B-A51A1F2AC85C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04B24493-C10B-456F-9D02-E55911BDF245}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04B24493-C10B-456F-9D02-E55911BDF245}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04B24493-C10B-456F-9D02-E55911BDF245}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04B24493-C10B-456F-9D02-E55911BDF245}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
