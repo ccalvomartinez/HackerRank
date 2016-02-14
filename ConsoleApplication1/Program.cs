@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
-//Console.SetIn(new System.IO.StreamReader("D:\\Documentos\\Downloads\\input05.txt"));
+
 namespace MatrixRotation
 {
-
-    public class Solution
+    public static class Solution
     {
         internal static void Main()
         {
@@ -121,15 +117,14 @@ namespace MatrixRotation
                 throw new InvalidOperationException("Cannot rotate if Min(RowCount, ColumnCount) % 2 != 0");
             }
 
-
-
             if (numberOfRotations < 0)
             {
                 throw new ArgumentOutOfRangeException("numberOfRotations", "Cannot have negative rotations");
             }
-            int framework_Count = Math.Min(RowCount, ColumnCount) / 2;
-            Framework<T>[] frameworks = new Framework<T>[framework_Count];
-            for (int i = 0; i < framework_Count; i++)
+
+            int frameworkCount = Math.Min(RowCount, ColumnCount) / 2;
+            Framework<T>[] frameworks = new Framework<T>[frameworkCount];
+            for (int i = 0; i < frameworkCount; i++)
             {
                 frameworks[i] = Framework<T>.FromMatrix(this, i, numberOfRotations);
             }
@@ -137,43 +132,26 @@ namespace MatrixRotation
             return SetMatrixFromFrameworks(frameworks);
         }
 
-        public Matrix<T> SetMatrixFromFrameworks(Framework<T>[] frameworks)
+        private Matrix<T> SetMatrixFromFrameworks(IReadOnlyList<Framework<T>> frameworks)
         {
             var result = new Matrix<T>(RowCount, ColumnCount);
             PositionOnMatrixFramewokStyleEnumerator positionEnumerator = new PositionOnMatrixFramewokStyleEnumerator(RowCount, ColumnCount);
-            for (int i = 0; i < frameworks.Length; i++)
+            foreach (Framework<T> framework in frameworks)
             {
-                for (int j = 0; j < frameworks[i].ElementCount; j++)
+                for (int j = 0; j < framework.ElementCount; j++)
                 {
                     positionEnumerator.MoveNext();
-                    result[positionEnumerator.Current.Row, positionEnumerator.Current.Column] = frameworks[i][j];
-                }
-
-            }
-            return result;
-        }
-
-
-        public Matrix<T> Transform(Func<int, int, T> func)
-        {
-            var result = new Matrix<T>(RowCount, ColumnCount);
-
-            for (int row = 0; row < RowCount; row++)
-            {
-                for (int column = 0; column < ColumnCount; column++)
-                {
-                    result[row, column] = func(row, column);
+                    result[positionEnumerator.Current.Row, positionEnumerator.Current.Column] = framework[j];
                 }
             }
-
             return result;
         }
     }
 
     public class Framework<T>
     {
-        private T[] _values;
-        private int _startIndex;
+        private readonly T[] _values;
+        private readonly int _startIndex;
         private Framework(T[] values, int startIndex)
         {
 
@@ -188,7 +166,7 @@ namespace MatrixRotation
         {
             if (frameworkIndex >= Math.Min(matrix.RowCount, matrix.ColumnCount) / 2)
             {
-                throw new ArgumentOutOfRangeException("frameworkIndex must be lower than Math.Min(matrix.RowCount, matrix.ColumnCount) / 2");
+                throw new ArgumentOutOfRangeException("frameworkIndex", "frameworkIndex must be lower than Math.Min(matrix.RowCount, matrix.ColumnCount) / 2");
             }
 
             var enumerator = new PositionOnMatrixFramewokStyleEnumerator(matrix.RowCount, matrix.ColumnCount, frameworkIndex);
@@ -227,24 +205,26 @@ namespace MatrixRotation
         private PositionOnMatrix _position;
         private int? _frameworkIndex;
         private int _currentIndex;
-        private int _columnCount;
-        private int _rowCount;
+        private readonly int _columnCount;
+        private readonly int _rowCount;
 
         public PositionOnMatrixFramewokStyleEnumerator(int rowCount, int columnCount, int? frameworkIndex = null)
         {
             if (rowCount <= 0)
             {
-                throw new ArgumentOutOfRangeException("rowCount must be greater than 0");
+                throw new ArgumentOutOfRangeException("rowCount", "rowCount must be greater than 0");
             }
+
             if (columnCount <= 0)
             {
-                throw new ArgumentOutOfRangeException("columCount must be greater than 0");
-
+                throw new ArgumentOutOfRangeException("columnCount", "columnCount must be greater than 0");
             }
+
             if (frameworkIndex + 1 > Math.Min(rowCount, columnCount) / 2)
             {
-                throw new ArgumentOutOfRangeException("frameworwIndex must be lower than Math.Min(rowCount,columncount) / 2");
+                throw new ArgumentOutOfRangeException("frameworkIndex", "frameworwIndex must be lower than Math.Min(rowCount,columncount) / 2");
             }
+
             _currentIndex = -1;
             _position = null;
             _columnCount = columnCount;
@@ -260,10 +240,8 @@ namespace MatrixRotation
                 {
                     return (_columnCount - 2 * _frameworkIndex.Value) * 2 + (_rowCount - 2 * _frameworkIndex.Value - 2) * 2;
                 }
-                else
-                {
-                    return _columnCount * _rowCount;
-                }
+
+                return _columnCount * _rowCount;
             }
         }
 
@@ -403,16 +381,11 @@ namespace MatrixRotation
             {
                 throw new ArgumentOutOfRangeException("row", "Row must be lower than RowCount");
             }
-            RowCount = rowCount;
-            ColumnCount = columnCount;
 
             Row = row;
             Column = column;
 
         }
-        private int RowCount { get; set; }
-
-        private int ColumnCount { get; set; }
 
         public int Row { get; private set; }
 
