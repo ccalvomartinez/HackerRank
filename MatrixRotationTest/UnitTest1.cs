@@ -1,7 +1,7 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+
 namespace MatrixRotationTest
 {
     [TestClass]
@@ -21,12 +21,8 @@ namespace MatrixRotationTest
                 }
             }
 
-
-
             var listOfElements = new List<int>();
-
             var positionEnumerator = new MatrixRotation.PositionOnMatrixFramewokStyleEnumerator(matrix.RowCount, matrix.ColumnCount);
-
             while (positionEnumerator.MoveNext())
             {
 
@@ -34,7 +30,7 @@ namespace MatrixRotationTest
             }
 
             Assert.AreEqual(
-@"1 2 3 4 5 6 12 18 24 30 36 42 41 40 39 38 37 31 25 19 13 7 8 9 10 11 17 23 29 35 34 33 32 26 20 14 15 16 22 28 27 21", String.Join(" ", listOfElements));
+@"1 2 3 4 5 6 12 18 24 30 36 42 41 40 39 38 37 31 25 19 13 7 8 9 10 11 17 23 29 35 34 33 32 26 20 14 15 16 22 28 27 21", string.Join(" ", listOfElements));
         }
         [TestMethod]
         public void MatrixFrameworkStyleEnumeratorTestFrameworkSet()
@@ -50,10 +46,7 @@ namespace MatrixRotationTest
                 }
             }
 
-
-
             var listOfElements = new List<int>();
-
             var positionEnumerator = new MatrixRotation.PositionOnMatrixFramewokStyleEnumerator(matrix.RowCount, matrix.ColumnCount, 0);
 
             while (positionEnumerator.MoveNext())
@@ -63,18 +56,18 @@ namespace MatrixRotationTest
             }
 
             Assert.AreEqual(
-@"1 2 3 4 5 6 12 18 24 30 36 42 41 40 39 38 37 31 25 19 13 7", String.Join(" ", listOfElements));
+@"1 2 3 4 5 6 12 18 24 30 36 42 41 40 39 38 37 31 25 19 13 7", string.Join(" ", listOfElements));
 
             listOfElements.Clear();
             var positionEnumerator1 = new MatrixRotation.PositionOnMatrixFramewokStyleEnumerator(matrix.RowCount, matrix.ColumnCount, 1);
 
             while (positionEnumerator1.MoveNext())
             {
-
                 listOfElements.Add(matrix[positionEnumerator1.Current.Row, positionEnumerator1.Current.Column]);
             }
+
             Assert.AreEqual(
-@"8 9 10 11 17 23 29 35 34 33 32 26 20 14", String.Join(" ", listOfElements));
+@"8 9 10 11 17 23 29 35 34 33 32 26 20 14", string.Join(" ", listOfElements));
 
             listOfElements.Clear();
             var positionEnumerator2 = new MatrixRotation.PositionOnMatrixFramewokStyleEnumerator(matrix.RowCount, matrix.ColumnCount, 2);
@@ -86,7 +79,7 @@ namespace MatrixRotationTest
             }
 
             Assert.AreEqual(
-@"15 16 22 28 27 21", String.Join(" ", listOfElements));
+@"15 16 22 28 27 21", string.Join(" ", listOfElements));
         }
 
         [TestMethod]
@@ -103,6 +96,7 @@ namespace MatrixRotationTest
 5 6 10 16
 9 13 14 15");
         }
+
         [TestMethod]
         public void Test01()
         {
@@ -160,11 +154,12 @@ namespace MatrixRotationTest
 2 12 11 10 18 19 20 30
 1 9 17 25 26 27 28 29");
         }
-        private void Test(string input, string expectedOutput)
+
+        private static void Test(string input, string expectedOutput)
         {
             var reader = new StringReader(input);
             var writer = new StringWriter();
-            writer.NewLine = "\n";
+
             MatrixRotation.Problem.Solve(reader, writer);
             var actualOutput = writer.ToString().Trim();
 
