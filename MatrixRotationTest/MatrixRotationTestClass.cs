@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace MatrixRotationTest
 {
     [TestClass]
-    public class UnitTest1
+    public class MatrixRotationTestClass
     {
         [TestMethod]
         public void PositionOnMatrixFramewokStyleEnumeratorTest()
