@@ -1,44 +1,51 @@
 ﻿using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using System;
 
 namespace MatrixRotationTest
 {
     [TestClass]
     public class MatrixRotationTestClass
     {
+
+
         [TestMethod]
-        public void PositionOnMatrixFramewokStyleEnumeratorTest()
+        public void PositionOnMatrixFramewokStyleEnumeratorTestNoFrameIndex()
         {
-            var matrix = new MatrixRotation.Matrix<int>(7, 6);
-            var i = 1;
-            for (int r = 0; r < matrix.RowCount; r++)
-            {
-                for (int c = 0; c < matrix.ColumnCount; c++)
-                {
-                    matrix[r, c] = i;
-                    i += 1;
-                }
-            }
-
-            var listOfElements = new List<int>();
-            var positionEnumerator = new MatrixRotation.PositionOnMatrixFramewokStyleEnumerator(matrix.RowCount, matrix.ColumnCount);
-            while (positionEnumerator.MoveNext())
-            {
-
-                listOfElements.Add(matrix[positionEnumerator.Current.Row, positionEnumerator.Current.Column]);
-            }
-
-            Assert.AreEqual(
-@"1 2 3 4 5 6 12 18 24 30 36 42 41 40 39 38 37 31 25 19 13 7 8 9 10 11 17 23 29 35 34 33 32 26 20 14 15 16 22 28 27 21", string.Join(" ", listOfElements));
+            PositionOnMatrixFramewokStyleEnumeratorTest(7, 6,
+            @"1 2 3 4 5 6 12 18 24 30 36 42 41 40 39 38 37 31 25 19 13 7 8 9 10 11 17 23 29 35 34 33 32 26 20 14 15 16 22 28 27 21");
         }
+
         [TestMethod]
-        public void MatrixFrameworkStyleEnumeratorTestFrameworkSet()
+        public void PositionOnMatrixFramewokStyleEnumeratorTestFrameIndexSet0()
         {
-            var matrix = new MatrixRotation.Matrix<int>(7, 6);
+            PositionOnMatrixFramewokStyleEnumeratorTest(7, 6,
+            @"1 2 3 4 5 6 12 18 24 30 36 42 41 40 39 38 37 31 25 19 13 7", 0);
+        }
+
+        [TestMethod]
+        public void PositionOnMatrixFramewokStyleEnumeratorTestFrameIndexSet1()
+        {
+            PositionOnMatrixFramewokStyleEnumeratorTest(7, 6,
+            @"8 9 10 11 17 23 29 35 34 33 32 26 20 14", 1);
+        }
+
+        [TestMethod]
+        public void PositionOnMatrixFramewokStyleEnumeratorTestFrameIndexSet2()
+        {
+            PositionOnMatrixFramewokStyleEnumeratorTest(7, 6,
+            @"15 16 22 28 27 21", 2);
+        }
+
+        public void PositionOnMatrixFramewokStyleEnumeratorTest(int rowCount, int columnCount, string expectedOutput, int? frameIndex = null)
+        {
+            var matrix = new MatrixRotation.Matrix<int>(rowCount, columnCount);
             var i = 1;
+
             for (int r = 0; r < matrix.RowCount; r++)
             {
+
                 for (int c = 0; c < matrix.ColumnCount; c++)
                 {
                     matrix[r, c] = i;
@@ -47,39 +54,14 @@ namespace MatrixRotationTest
             }
 
             var listOfElements = new List<int>();
-            var positionEnumerator = new MatrixRotation.PositionOnMatrixFramewokStyleEnumerator(matrix.RowCount, matrix.ColumnCount, 0);
+            var positionEnumerator = new MatrixRotation.PositionOnMatrixFramewokStyleEnumerator(matrix.RowCount, matrix.ColumnCount, frameIndex);
 
             while (positionEnumerator.MoveNext())
             {
-
                 listOfElements.Add(matrix[positionEnumerator.Current.Row, positionEnumerator.Current.Column]);
             }
 
-            Assert.AreEqual(
-@"1 2 3 4 5 6 12 18 24 30 36 42 41 40 39 38 37 31 25 19 13 7", string.Join(" ", listOfElements));
-
-            listOfElements.Clear();
-            var positionEnumerator1 = new MatrixRotation.PositionOnMatrixFramewokStyleEnumerator(matrix.RowCount, matrix.ColumnCount, 1);
-
-            while (positionEnumerator1.MoveNext())
-            {
-                listOfElements.Add(matrix[positionEnumerator1.Current.Row, positionEnumerator1.Current.Column]);
-            }
-
-            Assert.AreEqual(
-@"8 9 10 11 17 23 29 35 34 33 32 26 20 14", string.Join(" ", listOfElements));
-
-            listOfElements.Clear();
-            var positionEnumerator2 = new MatrixRotation.PositionOnMatrixFramewokStyleEnumerator(matrix.RowCount, matrix.ColumnCount, 2);
-
-            while (positionEnumerator2.MoveNext())
-            {
-
-                listOfElements.Add(matrix[positionEnumerator2.Current.Row, positionEnumerator2.Current.Column]);
-            }
-
-            Assert.AreEqual(
-@"15 16 22 28 27 21", string.Join(" ", listOfElements));
+            Assert.AreEqual(expectedOutput, string.Join(" ", listOfElements));
         }
 
         [TestMethod]
@@ -200,6 +182,47 @@ namespace MatrixRotationTest
                 {
                     MatrixRotation.Problem.Solve(reader, writer);
                 }
+            }
+        }
+
+        [TestMethod]
+        public void TestGetValueFromPositionOnMatrix0()
+        {
+            FrameGetIndexFromPositionOnMatrixTest(4, 5);
+        }
+
+        [TestMethod]
+        public void TestGetValueFromPositionOnMatrix1()
+        {
+            FrameGetIndexFromPositionOnMatrixTest(7, 8);
+        }
+
+        public void FrameGetIndexFromPositionOnMatrixTest(int rowcount, int columncount)
+        {
+            var matrix = new MatrixRotation.Matrix<int>(rowcount, columncount);
+
+            for (int r = 0; r < matrix.RowCount; r++)
+            {
+                for (int c = 0; c < matrix.ColumnCount; c++)
+                {
+                    matrix[r, c] = r * 10 + c;
+                }
+            }
+
+            int frameCount = Math.Min(matrix.RowCount, matrix.ColumnCount) / 2;
+
+            for (int frameIndex = 0; frameIndex < frameCount; frameIndex++)
+            {
+                var frame = MatrixRotation.Frame<int>.FromMatrix(matrix, frameIndex, 0);
+                var enumerable = new MatrixRotation.PositionOnMatrixFrameStyleEnumerable(matrix.RowCount, matrix.ColumnCount, frameIndex);
+                var i = 0;
+
+                foreach (MatrixRotation.PositionOnMatrix pos in enumerable)
+                {
+                    Assert.AreEqual(i, frame.GetIndexFromPositionOnMatrix(pos));
+                    i++;
+                }
+
             }
         }
     }
