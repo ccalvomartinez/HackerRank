@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Collections;
+using System.Linq;
 
 namespace MatrixRotation
 {
@@ -109,7 +110,6 @@ namespace MatrixRotation
             }
         }
 
-
         public Matrix<T> Rotate(int numberOfRotations)
         {
             if (Math.Min(RowCount, ColumnCount) % 2 != 0)
@@ -122,37 +122,37 @@ namespace MatrixRotation
                 throw new ArgumentOutOfRangeException("numberOfRotations", "Cannot have negative rotations");
             }
 
-            int frameworkCount = Math.Min(RowCount, ColumnCount) / 2;
-            Framework<T>[] frameworks = new Framework<T>[frameworkCount];
-            for (int i = 0; i < frameworkCount; i++)
-            {
-                frameworks[i] = Framework<T>.FromMatrix(this, i, numberOfRotations);
-            }
+            int frameCount = Math.Min(RowCount, ColumnCount) / 2;
+            var frames = Enumerable.Range(0, frameCount)
+                .Select(i => CircularArray<T>.FromMatrix(this, i, numberOfRotations))
+                .ToList();
 
-            return SetMatrixFromFrameworks(frameworks);
+            return BuildMatrixFromFrames(frames);
         }
 
-        private Matrix<T> SetMatrixFromFrameworks(IReadOnlyList<Framework<T>> frameworks)
+        private Matrix<T> BuildMatrixFromFrames(IReadOnlyList<CircularArray<T>> frames)
         {
             var result = new Matrix<T>(RowCount, ColumnCount);
             PositionOnMatrixFramewokStyleEnumerator positionEnumerator = new PositionOnMatrixFramewokStyleEnumerator(RowCount, ColumnCount);
-            foreach (Framework<T> framework in frameworks)
+            foreach (CircularArray<T> frame in frames)
             {
-                for (int j = 0; j < framework.ElementCount; j++)
+                for (int j = 0; j < frame.ElementCount; j++)
                 {
                     positionEnumerator.MoveNext();
-                    result[positionEnumerator.Current.Row, positionEnumerator.Current.Column] = framework[j];
+                    result[positionEnumerator.Current.Row, positionEnumerator.Current.Column] = frame[j];
                 }
             }
+
             return result;
         }
     }
 
-    public class Framework<T>
+    public class CircularArray<T>
     {
         private readonly T[] _values;
         private readonly int _startIndex;
-        private Framework(T[] values, int startIndex)
+
+        private CircularArray(T[] values, int startIndex)
         {
 
             _values = values;
@@ -160,55 +160,65 @@ namespace MatrixRotation
             {
                 startIndex = startIndex % ElementCount;
             }
+
             _startIndex = startIndex;
         }
-        public static Framework<T> FromMatrix(Matrix<T> matrix, int frameworkIndex, int startIndex)
+
+        public static CircularArray<T> FromMatrix(Matrix<T> matrix, int frameIndex, int startIndex)
         {
-            if (frameworkIndex >= Math.Min(matrix.RowCount, matrix.ColumnCount) / 2)
+            if (frameIndex >= Math.Min(matrix.RowCount, matrix.ColumnCount) / 2)
             {
-                throw new ArgumentOutOfRangeException("frameworkIndex", "frameworkIndex must be lower than Math.Min(matrix.RowCount, matrix.ColumnCount) / 2");
+                throw new ArgumentOutOfRangeException("frameIndex", "frameIndex must be lower than Math.Min(matrix.RowCount, matrix.ColumnCount) / 2");
             }
 
-            var enumerator = new PositionOnMatrixFramewokStyleEnumerator(matrix.RowCount, matrix.ColumnCount, frameworkIndex);
-            var values = new T[enumerator.TotalElements];
-
-            for (int i = 0; i < values.Length; i++)
-            {
-                enumerator.MoveNext();
-                values[i] = matrix[enumerator.Current.Row, enumerator.Current.Column];
-
-            }
-            return new Framework<T>(values, startIndex);
+            var enumerable = new PositionOnMatrixFrameStyleEnumerable(matrix.RowCount, matrix.ColumnCount, frameIndex);
+            var values = enumerable.Select(x => matrix[x.Row, x.Column]).ToArray();
+            return new CircularArray<T>(values, startIndex);
         }
+
         public int ElementCount { get { return _values.Length; } }
 
         public T this[int index]
         {
             get
             {
-                if (index + _startIndex < ElementCount)
-                {
-                    return _values[index + _startIndex];
-                }
-                else
-                {
-                    return _values[index - (ElementCount - _startIndex)];
-                }
+                return index + _startIndex < ElementCount
+                    ? _values[index + _startIndex]
+                    : _values[index - (ElementCount - _startIndex)];
             }
-
         }
     }
 
+    public class PositionOnMatrixFrameStyleEnumerable : IEnumerable<PositionOnMatrix>
+    {
+        private readonly IEnumerator<PositionOnMatrix> _enumerator;
+
+        public PositionOnMatrixFrameStyleEnumerable(int rowCount, int columnCount, int? frameIndex = null)
+        {
+            _enumerator = new PositionOnMatrixFramewokStyleEnumerator(rowCount, columnCount, frameIndex);
+        }
+
+        public IEnumerator<PositionOnMatrix> GetEnumerator()
+        {
+            return _enumerator;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
 
     public class PositionOnMatrixFramewokStyleEnumerator : IEnumerator<PositionOnMatrix>
     {
         private PositionOnMatrix _position;
-        private int? _frameworkIndex;
+        private int? _frameIndex;
         private int _currentIndex;
         private readonly int _columnCount;
         private readonly int _rowCount;
+        private readonly int _totalElements;
 
-        public PositionOnMatrixFramewokStyleEnumerator(int rowCount, int columnCount, int? frameworkIndex = null)
+        public PositionOnMatrixFramewokStyleEnumerator(int rowCount, int columnCount, int? frameIndex = null)
         {
             if (rowCount <= 0)
             {
@@ -220,29 +230,27 @@ namespace MatrixRotation
                 throw new ArgumentOutOfRangeException("columnCount", "columnCount must be greater than 0");
             }
 
-            if (frameworkIndex + 1 > Math.Min(rowCount, columnCount) / 2)
+            if (frameIndex + 1 > Math.Min(rowCount, columnCount) / 2)
             {
-                throw new ArgumentOutOfRangeException("frameworkIndex", "frameworwIndex must be lower than Math.Min(rowCount,columncount) / 2");
+                throw new ArgumentOutOfRangeException("frameIndex", "frameIndex must be lower than Math.Min(rowCount,columncount) / 2");
             }
 
             _currentIndex = -1;
             _position = null;
             _columnCount = columnCount;
             _rowCount = rowCount;
-            _frameworkIndex = frameworkIndex;
+            _frameIndex = frameIndex;
+            _totalElements = CalculateTotalElements();
         }
 
-        public int TotalElements
+        private int CalculateTotalElements()
         {
-            get
+            if (_frameIndex.HasValue)
             {
-                if (_frameworkIndex.HasValue)
-                {
-                    return (_columnCount - 2 * _frameworkIndex.Value) * 2 + (_rowCount - 2 * _frameworkIndex.Value - 2) * 2;
-                }
-
-                return _columnCount * _rowCount;
+                return (_columnCount - 2 * _frameIndex.Value) * 2 + (_rowCount - 2 * _frameIndex.Value - 2) * 2;
             }
+
+            return _columnCount * _rowCount;
         }
 
         object IEnumerator.Current
@@ -261,74 +269,74 @@ namespace MatrixRotation
             get { return _position; }
         }
 
-        public void Dispose()
+        void IDisposable.Dispose()
         {
-
         }
+
         public bool MoveNext()
         {
-            if (_currentIndex + 1 >= TotalElements)
+            if (_currentIndex + 1 >= _totalElements)
             {
                 return false;
             }
 
             if (_position == null)
             {
-                if (!_frameworkIndex.HasValue)
+                if (!_frameIndex.HasValue)
                 {
                     _position = new PositionOnMatrix(0, 0, _rowCount, _columnCount);
                     _currentIndex = 0;
 
                     return true;
                 }
-                else
-                {
-                    _position = new PositionOnMatrix(_frameworkIndex.Value, _frameworkIndex.Value, _rowCount, _columnCount);
-                    _currentIndex = 0;
 
-                    return true;
-                }
+                _position = new PositionOnMatrix(_frameIndex.Value, _frameIndex.Value, _rowCount, _columnCount);
+                _currentIndex = 0;
+
+                return true;
             }
-            else
+
+            if (MustGoLeft())
             {
-                if (MustGoLeft())
-                {
-                    _position = new PositionOnMatrix(_position.Row, _position.Column + 1, _rowCount, _columnCount);
-                    _currentIndex += 1;
+                _position = new PositionOnMatrix(_position.Row, _position.Column + 1, _rowCount, _columnCount);
+                _currentIndex += 1;
 
-                    return true;
-                }
-                if (MustGoDown())
-                {
-                    _position = new PositionOnMatrix(_position.Row + 1, _position.Column, _rowCount, _columnCount);
-                    _currentIndex += 1;
-
-                    return true;
-                }
-                if (MustGoRight())
-                {
-                    _position = new PositionOnMatrix(_position.Row, _position.Column - 1, _rowCount, _columnCount);
-                    _currentIndex += 1;
-
-                    return true;
-                }
-                if (MustGoUp())
-                {
-                    _position = new PositionOnMatrix(_position.Row - 1, _position.Column, _rowCount, _columnCount);
-                    _currentIndex += 1;
-
-                    return true;
-                }
-                if (MustGoInner())
-                {
-                    _position = new PositionOnMatrix(_position.Row, _position.Column + 1, _rowCount, _columnCount);
-                    _currentIndex += 1;
-
-                    return true;
-                }
-                throw new InvalidOperationException("Should not get here");
+                return true;
             }
 
+            if (MustGoDown())
+            {
+                _position = new PositionOnMatrix(_position.Row + 1, _position.Column, _rowCount, _columnCount);
+                _currentIndex += 1;
+
+                return true;
+            }
+
+            if (MustGoRight())
+            {
+                _position = new PositionOnMatrix(_position.Row, _position.Column - 1, _rowCount, _columnCount);
+                _currentIndex += 1;
+
+                return true;
+            }
+
+            if (MustGoUp())
+            {
+                _position = new PositionOnMatrix(_position.Row - 1, _position.Column, _rowCount, _columnCount);
+                _currentIndex += 1;
+
+                return true;
+            }
+
+            if (MustGoInner())
+            {
+                _position = new PositionOnMatrix(_position.Row, _position.Column + 1, _rowCount, _columnCount);
+                _currentIndex += 1;
+
+                return true;
+            }
+
+            throw new InvalidOperationException("Should not get here");
         }
 
         private bool MustGoInner()
@@ -394,7 +402,6 @@ namespace MatrixRotation
 
     public static class MatrixExtensions
     {
-
         public static void Write<T>(this Matrix<T> matrix, TextWriter output)
         {
             for (int r = 0; r < matrix.RowCount; r++)
