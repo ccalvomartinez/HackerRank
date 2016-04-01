@@ -28,3 +28,6 @@ TestResults
 packages
 *.dat
 *.nupkg
+*.psess
+GraphBreadFirst160224.vsp
+*.vsp
