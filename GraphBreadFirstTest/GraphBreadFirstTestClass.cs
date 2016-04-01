@@ -22,7 +22,7 @@ namespace GraphBreadFirstTest
 2 3
 2";
             var outputNodes = new List<string>(2) { "1 2 3 4", "1 2 3" };
-            var outputEdges = new List<string>(2) { "1 2|1 3", "2 3" };
+            var outputEdges = new List<string>(2) { "2 3|1|1|", "|3|2" };
             var reader = new StringReader(input);
             var gi = GraphInput.FromReader(reader);
             var actualOutputNodes = new List<string>(2);
@@ -31,8 +31,7 @@ namespace GraphBreadFirstTest
             foreach (Graph<int> graph in gi.Graphs)
             {
                 actualOutputNodes.Add(String.Join(" ", graph.Nodes.OrderBy(node => node.Data).Select(node => node.Data)));
-                actualOutputEdges.Add(String.Join("|", graph.Edges.OrderBy(edge => edge.StartNode.Data)
-                    .ThenBy(edge => edge.EndNode.Data).Select(edge => edge.StartNode.Data.ToString() + " " + edge.EndNode.Data.ToString())));
+                actualOutputEdges.Add(String.Join("|", graph.Nodes.OrderBy(node => node.Data).Select(node => String.Join(" ", node.NeighboorsNodes.Select(nnode => nnode.Data)))));
             }
 
             for (int i = 0; i < actualOutputNodes.Count; i++)
@@ -48,12 +47,18 @@ namespace GraphBreadFirstTest
         [TestMethod]
         public void GraphInputTestLarge()
         {
-            Console.SetIn(new System.IO.StreamReader("D:\\Documentos\\Downloads\\input012.txt"));
+            Console.SetIn(new System.IO.StreamReader("D:\\Documentos\\Downloads\\input011.txt"));
             var gi = GraphInput.FromReader(Console.In);
         }
-
         [TestMethod]
-        public void MininalDistanceTest() {
+        public void GraphInputTestVeryLarge()
+        {
+            Console.SetIn(new System.IO.StreamReader("D:\\Documentos\\Downloads\\input015.txt"));
+            var gi = GraphInput.FromReader(Console.In);
+        }
+        [TestMethod]
+        public void MininalDistanceTest()
+        {
             var input = @"2
 7 7
 1 2
@@ -74,15 +79,16 @@ namespace GraphBreadFirstTest
 6 7
 6";
             var outputs = new List<string>(2) { "6 12 6 12 -1 -1", "-1 -1 -1 -1 -1 6" };
-            var actualOutputs=new List<string>();
+            var actualOutputs = new List<string>();
             var reader = new StringReader(input);
             var gi = GraphInput.FromReader(reader);
-            int t=0;
-            
-            foreach (Graph<int> graph in gi.Graphs) {
-                var result=graph.MinimalDistances(gi.StartNode[t]);
+            int t = 0;
+
+            foreach (Graph<int> graph in gi.Graphs)
+            {
+                var result = graph.MinimalDistances(gi.StartNode[t]);
                 t += 1;
-                actualOutputs.Add(String.Join(" ", result.OrderBy(kvp => kvp.Key.Data).Select(kvp => double.IsPositiveInfinity(kvp.Value)?-1:kvp.Value)));
+                actualOutputs.Add(String.Join(" ", result.OrderBy(kvp => kvp.Key.Data).Select(kvp => double.IsPositiveInfinity(kvp.Value) ? -1 : kvp.Value)));
             }
 
             for (int i = 0; i < actualOutputs.Count; i++)
@@ -92,14 +98,16 @@ namespace GraphBreadFirstTest
         }
 
         [TestMethod]
-        public void MininalDistanceTestLarge() {
+        public void MininalDistanceTestLarge()
+        {
             Console.SetIn(new System.IO.StreamReader("D:\\Documentos\\Downloads\\input011.txt"));
             var gi = GraphInput.FromReader(Console.In);
             var output = @"6 6 6 6 12 6 12 6 12 12 6 6 6 6 6 12 12 6 6 6 6 12 6 12 6 12 6 12 12 12 12 6 12 12 6 12 12 6 12 6 12 6 12 12 6 6 12 6 6 6 6 12 12 12 12 6 6 6 12 6 6 12 12 12 12 12 12 6 6";
-            int t=0;
-            
-            foreach (Graph<int> graph in gi.Graphs) {
-                var result=graph.MinimalDistances(gi.StartNode[t]);
+            int t = 0;
+
+            foreach (Graph<int> graph in gi.Graphs)
+            {
+                var result = graph.MinimalDistances(gi.StartNode[t]);
                 t += 1;
                 Assert.AreEqual(output, String.Join(" ", result.OrderBy(kvp => kvp.Key.Data).Select(kvp => double.IsPositiveInfinity(kvp.Value) ? -1 : kvp.Value)));
             }
