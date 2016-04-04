@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GraphBreadFirst
 {
@@ -62,7 +60,7 @@ namespace GraphBreadFirst
                 }
 
 
-                foreach (Tuple<int, int> edge in PretratamientoEdges(lines, lineCount, numberOfEdges))
+                foreach (Tuple<int, int> edge in OrderAndEliminateDupliacatesOnEdges(lines, lineCount, numberOfEdges))
                 {
                     graphs[t].AddEdge(edge.Item1, edge.Item2, 6, Direction.Both);
                 }
@@ -78,7 +76,7 @@ namespace GraphBreadFirst
             return new GraphInput(testCount, graphs, startNodes);
         }
 
-        private static List<Tuple<int, int>> PretratamientoEdges(string[] lines, int initialLine, int numberOfEdges)
+        private static List<Tuple<int, int>> OrderAndEliminateDupliacatesOnEdges(string[] lines, int initialLine, int numberOfEdges)
         {
             List<Tuple<int, int>> OrderedListOfEdges = new List<Tuple<int, int>>();
             for (int e = 0; e < numberOfEdges; e++)
@@ -95,20 +93,18 @@ namespace GraphBreadFirst
                     OrderedListOfEdges.Add(new Tuple<int, int>(node1, node2));
                 }
             }
-            return OrderedListOfEdges.OrderBy(tup => tup.Item1).ThenBy(tup => tup.Item2).ToList();
+            return OrderedListOfEdges.Distinct().OrderBy(tup => tup.Item1).ThenBy(tup => tup.Item2).ToList();
         }
     }
 
     public class Graph<T> where T : IComparable<T>
     {
         private List<Node<T>> _nodes;
-        private List<List<Node<T>>> _neighboorGroups;
-
+    
         public IReadOnlyCollection<Node<T>> Nodes { get { return (IReadOnlyCollection<Node<T>>)_nodes; } }
         public Graph()
         {
             _nodes = new List<Node<T>>();
-            _neighboorGroups = new List<List<Node<T>>>();
         }
 
         public Node<T> AddNode(T data)
@@ -121,46 +117,30 @@ namespace GraphBreadFirst
             }
 
             _nodes.Add(newNode);
-            _neighboorGroups.Add(new List<Node<T>>() { newNode });
             return newNode;
         }
 
         public Node<T> AddNode(Node<T> node)
         {
-
             if (_nodes.Contains(node))
             {
                 throw new ArgumentException("The graph already contains this node");
             }
 
             _nodes.Add(node);
-            _neighboorGroups.Add(new List<Node<T>>() { node });
             return node;
         }
-
+       
         public void AddEdge(T startNodeData, T endNodeData, double weight, Direction dir)
         {
             var startNode = GetNodeByData(startNodeData);
             var endNode = GetNodeByData(endNodeData);
 
-            startNode.AddNeighboor(endNode);
-            endNode.AddNeighboor(startNode);
-            AddToNeighboorGroups(startNode, endNode);
+            startNode.AddNeighboor(endNode,weight);
+            endNode.AddNeighboor(startNode,weight);
+       
         }
-
-        private void AddToNeighboorGroups(Node<T> startNode, Node<T> endNode)
-        {
-            List<Node<T>> startNeighboorGroup = _neighboorGroups.Find(delegate(List<Node<T>> list) { return list.Contains(startNode); });
-            List<Node<T>> endNeighboorGroup = _neighboorGroups.Find(delegate(List<Node<T>> list) { return list.Contains(endNode); });
-
-            if (startNeighboorGroup != endNeighboorGroup)
-            {
-                startNeighboorGroup.AddRange(endNeighboorGroup);
-                startNeighboorGroup.Sort();
-                _neighboorGroups.Remove(endNeighboorGroup);
-            }
-        }
-
+       
         public Node<T> GetNodeByData(T data)
         {
             Node<T> searchedNode = new Node<T>(data);
@@ -172,64 +152,43 @@ namespace GraphBreadFirst
             throw new ArgumentException(String.Format("Node with data {0} is not in the graph", data));
         }
 
-     
-
-        private IReadOnlyList<Node<T>> GetNeighbourGroup(Node<T> node)
+        public Dictionary<Node<T>, double> MinimalDistances(Node<T> startNode)
         {
-            var result = new List<Node<T>>();
+            var minimalDistances = new Dictionary<Node<T>, double>();
+            var revisedNodes = new List<Node<T>>(_nodes.Count - 1);
 
-            var neighboorGroup = _neighboorGroups.Find(delegate(List<Node<T>> list) { return list.Contains(node); });
+            InitializeVariables(startNode, minimalDistances);
+         
+            revisedNodes.Add(startNode);
+            while (revisedNodes.Count < _nodes.Count)
+            {
+                var nextNode = minimalDistances.Where(kvp => !revisedNodes.Contains(kvp.Key)).OrderBy(kvp => kvp.Value).First().Key;
+                revisedNodes.Add(nextNode);
 
-
-
-            return result;
+                foreach (Neighboor<T> neighboor in nextNode.Neighboors.Where(nb=>  !revisedNodes.Contains(nb.Node)))
+                {
+                    if (minimalDistances[neighboor.Node] > minimalDistances[nextNode] + neighboor.Weight)
+                    {
+                        minimalDistances[neighboor.Node] = minimalDistances[nextNode] + neighboor.Weight;
+                    }
+                }
+            }
+            return minimalDistances;
         }
 
-        public SortedDictionary<Node<T>, double> MinimalDistances(Node<T> startNode)
+        private void InitializeVariables(Node<T> startNode, Dictionary<Node<T>, double> minimalDistances)
         {
+            var restOfNodes = _nodes.Except(new Node<T>[] { startNode });
 
+            foreach (Node<T> node in restOfNodes)
+            {
+                minimalDistances.Add(node, double.PositiveInfinity);
+            }
 
-            var minimalDistances = new SortedDictionary<Node<T>, double>();
-
-            //var restOfNodes = _nodes.Except(new Node<T>[] { startNode });
-
-            //foreach (Node<T> node in restOfNodes)
-            //{
-            //    var edge = GetEdgeByNodes(startNode, node, Direction.Both);
-
-            //    if (edge == null)
-            //    {
-            //        minimalDistances.Add(node, double.PositiveInfinity);
-            //    }
-            //    else
-            //    {
-            //        minimalDistances.Add(node, edge.Weight);
-            //    }
-            //}
-
-
-            //var revisedNodes = new List<Node<T>>(_nodes.Count - 1);
-
-            //var neighboorGroup = _neighboorGroups.Find(delegate(List<Node<T>> list) { return list.Contains(startNode); });
-            //var notNeighboorGroups = _neighboorGroups.Except(new List<Node<T>>[] { neighboorGroup });
-
-            //revisedNodes.AddRange(notNeighboorGroups.SelectMany(list => list));
-            //revisedNodes.Add(startNode);
-            //while (revisedNodes.Count < _nodes.Count)
-            //{
-            //    var nextNode = minimalDistances.Where(kvp => !revisedNodes.Contains(kvp.Key)).Aggregate((kvp1, kvp2) => kvp1.Value < kvp2.Value ? kvp1 : kvp2).Key;
-            //    revisedNodes.Add(nextNode);
-
-            //    foreach (Node<T> neighboorNode in GetNeighbourGroup(nextNode).Except(revisedNodes))
-            //    {
-
-            //        if (minimalDistances[neighboorNode] > minimalDistances[nextNode] + GetEdgeByNodes(nextNode, neighboorNode, Direction.Both).Weight)
-            //        {
-            //            minimalDistances[neighboorNode] = minimalDistances[nextNode] + GetEdgeByNodes(nextNode, neighboorNode, Direction.Both).Weight;
-            //        }
-            //    }
-            //}
-            return minimalDistances;
+            foreach (Neighboor<T> neighboor in startNode.Neighboors)
+            {
+                minimalDistances[neighboor.Node] = neighboor.Weight;
+            }
         }
     }
 
@@ -237,18 +196,20 @@ namespace GraphBreadFirst
     {
         public T Data { get; private set; }
 
-        public List<Node<T>> _neighboors;
-        public IReadOnlyCollection<Node<T>> NeighboorsNodes { get { return (IReadOnlyCollection<Node<T>>) _neighboors; } }
+        private List<Neighboor<T>> _neighboors;
+        public IReadOnlyCollection<Neighboor<T>> Neighboors { get { return (IReadOnlyCollection<Neighboor<T>>)_neighboors; } }
 
         public Node(T data)
         {
             Data = data;
-            _neighboors = new List<Node<T>>();
+            _neighboors = new List<Neighboor<T>>();
         }
-        public void AddNeighboor(Node<T> node) {
-            if (!_neighboors.Contains(node))
+        public void AddNeighboor(Node<T> node,double weight) {
+            Neighboor<T> newNeighboor= new Neighboor<T>(node,weight);
+           
+            if (!_neighboors.Contains(newNeighboor))
             {
-                _neighboors.Add(node);
+                _neighboors.Add(newNeighboor);
             }
         }
         //Overrides
@@ -276,90 +237,15 @@ namespace GraphBreadFirst
         }
     }
 
-    public class Edge<T> : IComparable<Edge<T>> where T : IComparable<T>
-    {
-        public Node<T> StartNode { get; private set; }
-        public Node<T> EndNode { get; private set; }
-        public Double Weight { get; private set; }
-        public Direction Direction { get; private set; }
-
-        public Edge(Node<T> start, Node<T> end, double weight, Direction dir)
-        {
-
-            StartNode = start;
-            EndNode = end;
+    public struct Neighboor<T> where T:IComparable<T> {
+        public Node<T> Node;
+        public double Weight;
+        public Neighboor(Node<T> node,double weight){
+            Node = node;
             Weight = weight;
-            Direction = dir;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj == null || GetType() != obj.GetType())
-                return false;
-            var other = (Edge<T>)obj;
-            if (Direction == other.Direction && Direction == Direction.Both)
-            {
-                return (StartNode.Equals(other.StartNode) && EndNode.Equals(other.EndNode)) ||
-                    (StartNode.Equals(other.EndNode) && EndNode.Equals(other.StartNode));
-            }
-            return StartNode.Equals(other.StartNode) && EndNode.Equals(other.EndNode) && Direction == other.Direction;
-        }
-
-        public override int GetHashCode()
-        {
-            return StartNode.Data.GetHashCode() + EndNode.Data.GetHashCode();
-        }
-
-        public int CompareTo(Edge<T> other)
-        {
-            if (this.Equals(other))
-            {
-                return 0;
-            }
-            Node<T> thisStartNode, thisEndNode, otherStartNode, otherEndNode;
-
-            thisStartNode = StartNode;
-            thisEndNode = EndNode;
-            otherStartNode = other.StartNode;
-            otherEndNode = other.EndNode;
-
-            if (Direction == Direction.Both)
-            {
-                if (StartNode.CompareTo(EndNode) > 0)
-                {
-                    thisStartNode = EndNode;
-                    thisEndNode = StartNode;
-                }
-            }
-
-
-            if (other.Direction == Direction.Both)
-            {
-                if (other.StartNode.CompareTo(other.EndNode) > 0)
-                {
-                    otherStartNode = other.EndNode;
-                    otherEndNode = other.StartNode;
-                }
-            }
-
-            if (thisStartNode.CompareTo(otherStartNode) != 0)
-            {
-                return thisStartNode.CompareTo(otherStartNode);
-            }
-            if (thisEndNode.CompareTo(otherEndNode) != 0)
-            {
-                return thisEndNode.CompareTo(otherEndNode);
-            }
-            return Direction.CompareTo(other.Direction);
-        }
-
-        public override string ToString()
-        {
-            return StartNode.ToString() + " " + EndNode.ToString();
         }
     }
-
-
+   
     [Flags]
     public enum Direction
     {

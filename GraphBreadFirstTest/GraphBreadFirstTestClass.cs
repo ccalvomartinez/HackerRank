@@ -31,7 +31,7 @@ namespace GraphBreadFirstTest
             foreach (Graph<int> graph in gi.Graphs)
             {
                 actualOutputNodes.Add(String.Join(" ", graph.Nodes.OrderBy(node => node.Data).Select(node => node.Data)));
-                actualOutputEdges.Add(String.Join("|", graph.Nodes.OrderBy(node => node.Data).Select(node => String.Join(" ", node.NeighboorsNodes.Select(nnode => nnode.Data)))));
+                actualOutputEdges.Add(String.Join("|", graph.Nodes.OrderBy(node => node.Data).Select(node => String.Join(" ", node.Neighboors.Select(nnode => nnode.Node.Data)))));
             }
 
             for (int i = 0; i < actualOutputNodes.Count; i++)
@@ -126,6 +126,95 @@ namespace GraphBreadFirstTest
                 t += 1;
                 Assert.AreEqual(reader.ReadLine(), String.Join(" ", result.OrderBy(kvp => kvp.Key.Data).Select(kvp => double.IsPositiveInfinity(kvp.Value) ? -1 : kvp.Value)));
             }
+        }
+    }
+
+    [TestClass]
+    public class NodeTestClass {
+        [TestMethod]
+        public void AddNeighboorTest() { 
+            Node<int> node = new Node<int>(3);
+            Node<int> neightboorNode = new Node<int>(2);
+            var weight = 3;
+            node.AddNeighboor(neightboorNode,weight);
+            Assert.IsNotNull(node.Neighboors);
+            Assert.AreEqual(1, node.Neighboors.Count());
+            Assert.AreEqual(neightboorNode, node.Neighboors.First().Node);
+            Assert.AreEqual(weight, node.Neighboors.First().Weight);
+        }
+        [TestMethod]
+        public void EqualsTest() {
+            Node<int> node1 = new Node<int>(1);
+            Node<int> node2=new Node<int>(1);
+            Assert.IsTrue(node1.Equals(node2));
+            Assert.IsFalse(node1 == node2);
+        }
+        [TestMethod]
+        public void NotEqualsTest()
+        {
+            Node<int> node1 = new Node<int>(1);
+            Node<int> node2 = new Node<int>(2);
+            Assert.IsFalse(node1.Equals(node2));
+            Assert.IsFalse(node1 == node2);
+        }
+        [TestMethod]
+        public void CompareToDistinctNodesTest() {
+            Node<int> node1 = new Node<int>(1);
+            Node<int> node2 = new Node<int>(2);
+            Assert.IsTrue(node2.CompareTo(node1) > 0);
+            Assert.IsTrue(node1.CompareTo(node2) < 0);
+        }
+        [TestMethod]
+        public void CompareToEqualNodesTest()
+        {
+            Node<int> node1 = new Node<int>(1);
+            Node<int> node2 = new Node<int>(1);
+            Assert.IsTrue(node2.CompareTo(node1) == 0);
+          
+        }
+        [TestMethod]
+        public void ToStringTest() {
+            Node<int> node1 = new Node<int>(1);
+            Assert.AreEqual("1", node1.ToString());        
+        }
+    }
+
+    [TestClass]
+    public class GraphTestClass {
+        [TestMethod]
+        public void AddNodeDataTest() {
+            Graph<int> graph = new Graph<int>();
+            graph.AddNode(3);
+            Assert.AreEqual(1, graph.Nodes.Count);
+            Assert.AreEqual(3, graph.Nodes.First().Data);
+        }
+        [TestMethod]
+        public void AddNodeTest()
+        {
+            Graph<int> graph = new Graph<int>();
+            Node<int> node = new Node<int>(3);
+            graph.AddNode(node);
+            Assert.AreEqual(1, graph.Nodes.Count);
+            Assert.AreEqual(node, graph.Nodes.First());
+        }
+        [TestMethod]
+        public void GetNodeByDataTest() {
+            Graph<int> graph = new Graph<int>();
+            graph.AddNode(1);
+            graph.AddNode(2);
+            graph.AddNode(5);
+        
+            Assert.AreEqual(5, graph.GetNodeByData(5).Data);
+        }
+        [TestMethod, ExpectedException(typeof(ArgumentException))]
+        public void GetNodeByDataFailingTest()
+        {
+            Graph<int> graph = new Graph<int>();
+            graph.AddNode(1);
+            graph.AddNode(2);
+            graph.AddNode(5);
+
+            Assert.AreEqual(3, graph.GetNodeByData(3).Data);
         }
     }
 }
